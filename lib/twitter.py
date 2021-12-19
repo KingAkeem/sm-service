@@ -1,4 +1,4 @@
-from geojson import Feature, Point
+from geojson import Feature
 from twint import run, Config
 from geopy.geocoders import Nominatim
 
@@ -25,8 +25,7 @@ def read_tweet_arguments(args):
 		'distance_in_miles': args.get('distance', DEFAULT_DISTANCE, type=int),
 	}
 
-
-def format_geolocation(address, distance):
+def format_location(address, distance):
 	if not address:
 		return None
 	
@@ -38,10 +37,12 @@ def format_geolocation(address, distance):
 	except AttributeError:
 		raise InvalidAddressError(address)
 
-
-def to_geojson(tweet):
-	if tweet.place:
-		return Feature(geometry=tweet.place, properties=vars(tweet))	
+def to_features(tweets):
+	features = []
+	for tweet in tweets:
+		if tweet.place: # place corresponds to a point geometry
+			features.append(Feature(geometry=tweet.place, properties=vars(tweet)))
+	return features
 
 def scrape_tweets(args):
 	tweets = []
@@ -56,17 +57,16 @@ def scrape_tweets(args):
 	# add formats that city can be in based on geopy
 	# distance should be a number (integer/float) that is greater than 0.
 	if args['city']:
-		c.Geo, coordinate = format_geolocation(args['city'], args['distance_in_miles'])
+		c.Geo, coordinate = format_location(args['city'], args['distance_in_miles'])
 
 	if args['keyword'] != 'None':
 		c.Search = args['keyword']
 	
 	if args['user']:
 		c.Username = args['user']
-	
 
 	run.Search(c) # run config once filters have been added
-	return list(filter(lambda x: x is not None, [to_geojson(tweet) for tweet in tweets])), { 'latitude':  coordinate.latitude, 'longitude': coordinate.longitude}
+	return to_features(tweets), { 'latitude': coordinate.latitude, 'longitude': coordinate.longitude } 
 
 def scrape_user(username):
 	users = []

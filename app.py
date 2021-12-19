@@ -18,8 +18,9 @@ CORS(app)
 def get_tweets():
 	tweet_args = read_tweet_arguments(request.args)
 	try:
-		points, origin = scrape_tweets(tweet_args)
-		return json.jsonify({'points': points, 'origin': origin})
+		features, origin = scrape_tweets(tweet_args)
+		print(features, origin)
+		return json.jsonify({'features': features, 'origin': origin})
 	except InvalidAddressError:
 		abort(400)
 
